@@ -16,6 +16,7 @@ class MeshcorePacketParser:
     def __init__(self):
         self.channels = [{} for _ in range(40)] # keep our own copy of channels, 40 elements by default
         self.channels_log = [] # stores the channel msg events
+        self.direct_text_log = [] # stores the direct message RF metadata events for RSSI enrichment
         self.decrypt_channels = False
 
     async def newChannel(self, chan):
@@ -31,6 +32,12 @@ class MeshcorePacketParser:
     async def findLogChannelPkt(self, pkt_hash):
         # search for the same packet
         return next((l for l in reversed(self.channels_log) if 'pkt_hash' in l and l['pkt_hash'] == pkt_hash), None)
+
+    async def consumeLogDirectText(self):
+        # return and remove the oldest direct text log entry (FIFO)
+        if len(self.direct_text_log) > 0:
+            return self.direct_text_log.pop(0)
+        return None
 
     async def parsePacketPayload(self, payload, log_data={}):
         """ Parses the payload of a log_rx packet
@@ -169,6 +176,11 @@ class MeshcorePacketParser:
             self.channels_log.append(log_data)
             if len(self.channels_log) > 100:
                 del self.channels_log[:25]
+
+        elif not payload is None and payload_type == 0x02: # direct/private text message
+            self.direct_text_log.append(log_data.copy())
+            if len(self.direct_text_log) > 100:
+                del self.direct_text_log[:25]
 
         elif not payload is None and payload_type == 0x04: # Advert
             try:

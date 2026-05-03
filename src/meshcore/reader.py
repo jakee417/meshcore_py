@@ -219,6 +219,13 @@ class MessageReader:
                     res["signature"] = dbuf.read(4).hex()
                 res["text"] = dbuf.read().decode("utf-8", "ignore")
 
+                logged = await self.packet_parser.consumeLogDirectText()
+                if logged is not None:
+                    res["path"] = logged["path"]
+                    res["RSSI"] = logged["rssi"]
+                    res["SNR"] = logged["snr"]
+                    res["recv_time"] = logged["recv_time"]
+
                 attributes = {
                     "pubkey_prefix": res["pubkey_prefix"],
                     "txt_type": res["txt_type"],
@@ -247,6 +254,12 @@ class MessageReader:
                 if txt_type == 2:
                     res["signature"] = dbuf.read(4).hex()
                 res["text"] = dbuf.read().decode("utf-8", "ignore")
+
+                logged = await self.packet_parser.consumeLogDirectText()
+                if logged is not None:
+                    res["path"] = logged["path"]
+                    res["RSSI"] = logged["rssi"]
+                    res["recv_time"] = logged["recv_time"]
 
                 attributes = {
                     "pubkey_prefix": res["pubkey_prefix"],
